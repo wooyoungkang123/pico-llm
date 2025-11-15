@@ -1,0 +1,501 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[section]{placeins}
+\usepackage{siunitx}
+\usepackage[table]{xcolor}
+\usepackage{hyperref}
+
+% Control spacing and page layout
+\raggedbottom % Prevents large vertical spaces
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt} % Space between floats and text
+\setlength{\floatsep}{10pt plus 2pt minus 2pt} % Space between consecutive floats
+\setlength{\intextsep}{10pt plus 2pt minus 2pt} % Space around in-text floats
+
+% Enable page numbers
+\thispagestyle{plain}
+\pagestyle{plain}
+
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Comparison of DHEA-S Secretion Levels in Underweight \& Normal-Weight Female Participants\\}
+
+\author{
+\IEEEauthorblockN{
+Rose T. Faghih\IEEEauthorrefmark{1},
+Milad Shojaee\IEEEauthorrefmark{1},
+Qing Xiang\IEEEauthorrefmark{1},
+Karthik Shivashankaran\IEEEauthorrefmark{1}
+}
+\IEEEauthorblockA{\IEEEauthorrefmark{1}New York University}
+}
+
+\maketitle
+
+\begin{abstract}
+We assess hormonal differences in underweight and normal weight female participants by characterizing DHEA-S secretion levels. DHEA-S levels are measured from subcutaneous abdominal tissue. We infer the underlying secretory characteristics to understand the differences in DHEA-S secretion. We used a new Physiological State-Space Model to characterize DHEA-S secretion based on a deconvolution and sparse recovery approach. Then we performed statistical analysis on the deconvolution results to identify significant differences between the two cohorts of participants. Further, a hidden hormone-related health state is estimated using a Bayesian state-space framework. Finally, the differences between the estimated states of the subject cohorts is statistically analyzed. We find DHEA-S secretion in underweight patients is higher than normal weight female participants.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Dehydroepiandrosterone sulfate secretion, body mass index, compressed sensing
+\end{IEEEkeywords}
+
+\section{Introduction}
+Dehydroepiandrosterone sulfate (DHEA-S) is a cortisol metabolite secreted in the adrenal gland and a precursor hormone of sex hormones such as testosterone and estrogen. However, it does not exhibit circadian variations, unlike other adrenal steroidal hormones. It can potentially indicate disorders of aging, reproductive health, and those related to the adrenal gland. DHEA-S is most commonly related to poly cystic ovary syndrome \cite{b11} \cite{b12}. Studies show that DHEA-S deficiency can lead to increased cardiovascular morbidity and mortality \cite{b9} \cite{b10}. Alterations of DHEA-S secretions, in recent years, have shown to be related to bipolar disorder and Alzheimer's disease \cite{b13} \cite{b14}. DHEA-S levels have also been shown to predict weight gain in women with anorexia nervosa \cite{b15}. Therefore, it is important to study this hormone to understand its characteristics in various cohorts of patients.
+
+We assess hormonal differences in underweight and normal weight female participants by characterizing DHEA-S secretion levels. We infer the underlying secretory characteristics to understand the differences in DHEA-S secretion between underweight and normal-weight women.
+
+Previous research shows a strong association between DHEA-S and BMI. It suggests DHEA-S levels are negatively related to BMI \cite{b16} \cite{b17}. However, these models capture the total free and protein-bound forms of DHEA-S in plasma, while we wanted to study the DHEA-S secretion characteristics. We tested if this same correlation is found between DHEA-S secretion and BMI. To do so we used a new Physiological State-Space Model to characterize DHEA-S secretion based on a deconvolution and sparse recovery approach. Then we performed statistical analysis on the deconvolution results to identify significant differences between the two cohorts of participants. Further, a hidden hormone-related health state was estimated using a Bayesian state-space framework. Finally, the differences between the estimated states of the subject cohorts was statistically analyzed.
+
+The remainder of this paper is organized as follows: Section II describes the dataset, data collection and preprocessing of data. Section III describes the physiological state-space model. Section IV describes the statistical analysis and the results. \\
+
+
+\section{Method}
+
+\subsection{Dataset}
+
+DHEA-S levels are measured in underweight ($\text{BMI} < 18.5$) and normal weight ($18.5 \leq \text{BMI} \leq 24.9$) female participants. DHEA-S levels are measured from subcutaneous abdominal tissue using a U-Rhythm hormone sampling device \cite{b8}. 72 interstitial fluid samples were collected every 20 minutes over 24 hours from 5 pairs of underweight and normal-weight female participants of the same age.
+
+\subsection{Structure of Data}
+
+\FloatBarrier
+
+\begin{table}[h!]
+\centering
+\caption{Participants (10x3 struct)}
+\rowcolors{2}{white}{gray!15}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{id (double)} & \textbf{age (int)} & \textbf{underweight (bool)} \\
+\hline 
+735 & 24 &  1 \\
+835 & 24 &  0 \\
+665 & 27 &  1 \\
+317 & 27 &  0 \\
+367 & 29 &  1 \\
+463 & 29 &  0 \\
+75  & 35 &  1 \\
+211 & 35 &  0 \\
+681 & 47 &  1 \\
+5093 & 47 &  0 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Preprocessing}
+
+In the case of missing data points, the cubic spline interpolation algorithm was used to fill in the missing data.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=1\linewidth]{interpolated/211.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series of subject 211.} Blue markers are the measured DHEA-S time series and orange markers are the interpolated DHEA-S time series.}
+\label{fig}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=1\linewidth]{stateEstimation/211.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 211.}}
+    \label{fig:state211}
+\end{figure}
+
+\subsection{State-Space Model}
+\begin{align}
+    \dot{x}_{1}^{d}(t) &= - \theta_{1} {x}_{1}^{d}(t) + u(t) \\
+    \dot{x}_{2}^{d}(t) &=   \theta_{1} {x}_{1}^{d}(t) - \theta_{2} {x}_{2}^{d}(t) \\
+    \dot{x}_{3}^{d}(t) &=   \theta_{3} {x}_{2}^{d}(t) - \theta_{4} {x}_{3}^{d}(t)
+\end{align}
+
+where ${x}_{1}^{d}(t)$ is DHEA-S concentration in the adrenal glands, ${x}_{2}^{d}(t)$ is DHEA-S concentration in the blood, and ${x}_{3}^{d}(t)$ is the DHEA-S concentration in the tissue. $\theta_1$ is the DHEA-S diffusion rate constant from the adrenal glands to the blood, $\theta_2$ is the DHEA-S clearance rate constant from the blood, $\theta_3$ is the DHEA-S diffusion rate constant from the blood to the tissue, and $\theta_4$ is the DHEA-S clearance
+rate constant from the tissue. Note that $\theta_2$ governs the rate of all DHEA-S that leaves the blood, including DHEA-S that diffuses into the tissue. \\
+
+\subsubsection*{Parameter Constraints}
+\begin{align}
+    \theta > 0 \\
+    20 \theta_2 < \theta_1 \\
+    10 \theta_3 < \theta_2 \\
+    15 \le \| u \|_0 \le 22
+\end{align}
+
+All rate constants are defined to be positive, thus (4). DHEA-S is estimated to be in the blood for 7-10 hours \cite{b5}. It takes approximately 2 hours for the hormone to reach its maximum level in the blood \cite{b6}. Based on this we can compute (5). We estimate the infusion and diffusion rates of DHEA-S based on the hormone half-life \cite{b7}. A data-based approach can be incorporated to relate $\theta_2$ and $\theta_3$. The dataset in \cite{b8}, provides data on measured hormones in both blood plasma and the adipose tissue for 7 healthy volunteers. A rough estimate could be obtained by considering the mean values of the hormone concentrations in the blood and tissue. Accordingly, we define (6). Based on cortisol data \cite{b7}, we define (7), where the $\textit{l}_0$-norm depicts the number of non-zero elements in the vector $u$. \\
+
+\subsection{Deconvolution}
+The hormone pulses that result in subsequent hormone secretion are considered to have the form $u(t) = \sum_{i=1}^{N} q_i \delta(t - \tau_i)$ where $q_i$ represents the amplitude of the DHEA-S pulse at time $\tau_i$. In this study, we assume that impulses occur at integer minute values. The model can be written as follows:
+
+$$
+A =
+\begin{bmatrix}
+-\theta_1 & 0 & 0 \\
+\theta_1 & -\theta_2 & 0 \\
+0 & \theta_3 & -\theta_4
+\end{bmatrix},
+\quad
+B =
+\begin{bmatrix}
+1 \\
+0 \\
+0
+\end{bmatrix},
+\quad
+C =
+\begin{bmatrix}
+0 & 0 & 1
+\end{bmatrix}
+$$
+
+The discretized state-space model can be written as:
+
+\begin{align}
+    x_k &= A_d x_{k-1} + B_d u_k \\
+    y_k &= C x_k
+\end{align}
+
+where, 
+\begin{align}
+    A_d &= e^{A T_s} \\
+    B_d &= \int_{0}^{T_s} e^{A (T_s - \tau)} B \ d\tau \\
+    T_s &= \text{sampling period} = 20 \ \text{minutes}
+\end{align}
+
+The optimization problem can be written as,
+\begin{align}
+    \min_{u \ge 0} || y - C x  ||_2^2 + \lambda || u ||_p^p
+\end{align}
+
+where the $l_p$-norm is an approximation to the $l_0$-norm $(0 < p \le 2)$ and $l$ is chosen such that the sparsity of u is between 15 to 22. Then, by using a coordinate descent approach, this optimization problem can be solved iteratively until convergence is achieved.
+
+We can solve this problem using different approaches like the basis pursuit, greedy algorithms, iterative-thresholding algorithms, or the FOCUSS algorithm and its extensions. Here we have use an extension of the FOCUSS algorithm called FOCUSS+ which allows for solving for $u$ such that the maximum sparsity of $u$ is $n$ ($n = 22$ for our current problem) and $u$ is nonnegative \cite{b18}. This algorithm uses a heuristic approach for updating $l$, which tunes the trade-off between the sparsity and the residual error by increasing $l$ to a maximum regularization $l_{max}$ as the residual error decreases.
+
+$\theta$ and $u$ is updated by finding an optimal choice of $l$ such that enough noise is filtered out and the estimated u is not capturing residual error by finding a less sparse solution. We use the Generalized Cross-Validation (GCV) technique for estimating the regularization parameter such that there is a balance in filtering out the noise and the sparsity of $u$ \cite{b19}. 
+
+Then we performed a statistical analysis on the deconvolution results to identify significant differences between the two cohorts of participants. Further, a hidden hormone-related health state was be estimated using a Bayesian state-space framework. Finally, the differences between the estimated states of the subject cohorts will be statistically analyzed.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\linewidth]{deconv/211.png}
+\caption{\textbf{Estimated Deconvolution of DHEA-S levels in subject 211.} Red crosses are the measured DHEA-S time series, black curve is the estimated DHEA-S levels and blue vertical lines are the estimated pulse timing and amplitude.}
+\label{fig1}
+\end{figure}
+
+\begin{table}[h!]
+\centering
+\caption{Deconvolution Results}
+\rowcolors{2}{white}{gray!15}
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+\hline
+\textbf{ID} & \textbf{Pulses} & \textbf{$L_1$ Norm} & \textbf{$L_2$ Norm} & \textbf{AUC} \\ 
+\hline
+735 & 20 & 1161918.64 & 295634.83 & 32279.20 \\
+835 & 15 & 43272.67 & 12114.65 & 11605.43 \\
+665 & 19 & 87224.04 & 21314.65 & 25518.69 \\
+317 & 15 & 620337.94 & 228812.18 & 16820.03 \\
+75 & 16 & 13192.58 & 3480.07 & 6309.51 \\
+211 & 20 & 701018.97 & 166304.06 & 22684.70 \\
+681 & 21 & 78347.54 & 18186.38 & 9109.84 \\
+5093 & 11 & 540953.46 & 177855.60 & 15937.03 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Deconvolution Results}
+\rowcolors{2}{white}{gray!15}
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+\hline
+\textbf{ID} & \textbf{$\theta_1$} & \textbf{$\theta_2$} & \textbf{$\theta_3$} & \textbf{$\theta_4$} \\
+\hline
+735 & \num{3.86e-01} & \num{5.07e-03} & \num{6.24e-05} & \num{4.07e-01} \\
+835 & \num{8.85e-01} & \num{2.61e-03} & \num{2.59e-04} & \num{3.26e-01} \\
+665 & \num{4.96e-01} & \num{1.24e-02} & \num{3.83e-04} & \num{1.10e-01} \\
+317 & \num{6.13e-01} & \num{2.14e-03} & \num{2.80e-05} & \num{3.70e-01} \\
+75 & \num{8.32e-01} & \num{9.41e-03} & \num{1.78e-04} & \num{4.40e-02} \\
+211 & \num{3.89e-01} & \num{7.63e-03} & \num{1.24e-05} & \num{4.77e-02} \\
+681 & \num{7.30e-01} & \num{2.42e-02} & \num{4.90e-05} & \num{1.61e-02} \\
+5093 & \num{5.91e-01} & \num{2.46e-03} & \num{4.26e-05} & \num{5.09e-01} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{State Estimation}
+
+A hidden hormone-related health state is estimated using a Bayesian state-space framework.
+
+\section{Results}
+
+Since we have non-parametric, paired, data we use Wilcoxon Signed-Rank Test to compare summary values like, \textit{Number of Pulses}, $mean$ and \textit{Area Under the Curve} ($AUC$) of each subject. 
+
+
+\begin{table}[h!]
+\centering
+\caption{Statistical Results}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Measure} & \textbf{\textit{Stat}} & \textit{\textbf{p-value}} \\
+\hline
+$L_0$ & 1.5 & 0.375 \\
+$L_1$ & 4.0 & 0.875 \\
+$L_2$ & 4.0 & 0.875 \\
+$AUC$ & 4.0 & 0.875 \\
+$\theta_1$ & 5.0 & 1.0 \\
+$\theta_2$ & 0.0 & 0.125 \\
+$\theta_3$ & 3.0 & 0.625 \\
+$\theta_4$ & 2.0 & 0.375 \\
+\hline
+\end{tabular}
+\end{table}
+
+% Since $L_0$ Norm or \textit{Number of Pulses} has a $p-value$ of $0.0656$, we can say that there is a statistically significant difference in DHEA-S secretion among underweight and normal weight pairs. More specifically, the DHEA-S secretion in underweight participants is lower than normal weight participants. This also confirms previous research that suggest serum DHEA-S is negatively related to BMI \cite{b16} \cite{b17}. 
+
+Since no $p-value$ is less than $0.05$ there is no statistically significant difference in DHEA-S secretion among underweight and normal weight pairs.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{compare/boxplot_pulses.png}
+    \caption{\textbf{Comparison of \textit{Number of Pulses} between underweight and normal weight subjects}}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{compare/boxplot_l1.png}
+    \caption{\textbf{Comparison of \textit{$L_1$ Norm} between underweight and normal weight subjects}}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{compare/boxplot_l2.png}
+    \caption{\textbf{Comparison of \textit{$L_2$ Norm} between underweight and normal weight subjects}}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{compare/boxplot_auc.png}
+    \caption{\textbf{Comparison of \textit{$AUC$} between underweight and normal weight subjects}}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{compare/boxplot_theta_1.png}
+    \caption{\textbf{Comparison of \textit{$\theta_1$} between underweight and normal weight subjects}}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{compare/boxplot_theta_2.png}
+    \caption{\textbf{Comparison of \textit{$\theta_2$} between underweight and normal weight subjects}}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{compare/boxplot_theta_3.png}
+    \caption{\textbf{Comparison of \textit{$\theta_3$} between underweight and normal weight subjects}}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{compare/boxplot_theta_4.png}
+    \caption{\textbf{Comparison of \textit{$\theta_4$} between underweight and normal weight subjects}}
+    \label{fig:placeholder}
+\end{figure}
+
+\FloatBarrier
+
+\bibliographystyle{unsrt} % numbers in order of appearance
+\bibliography{references} 
+
+\FloatBarrier
+
+\section{Appendix}
+
+\subsection{Interpolation of measured DHEA-S time series}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/211.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/317.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/367.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/463.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/5093.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/665.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/681.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/735.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/75.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolated/835.png}
+\caption{\textbf{Interpolation of measured DHEA-S time series}}
+\label{fig}
+\end{figure}
+
+\FloatBarrier
+
+
+
+\subsection{Comparison of Estimated DHEA-S levels}
+
+% \begin{figure}
+% \centering
+% \includegraphics[width=1\linewidth]{compare/367_vs_463.png}
+% \caption{\textbf{Comparison of Estimated DHEA-S levels between underweight and normal weight subjects ID 367 and 463}}
+% \label{fig}
+% \end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=1\linewidth]{compare/665_vs_317.png}
+\caption{\textbf{Comparison of Estimated DHEA-S levels between underweight and normal weight subjects ID 665 and 317}}
+\label{fig}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=1\linewidth]{compare/681_vs_5093.png}
+\caption{\textbf{Comparison of Estimated DHEA-S levels between underweight and normal weight subjects ID 681 and 5093}}
+\label{fig}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=1\linewidth]{compare/735_vs_835.png}
+\caption{\textbf{Comparison of Estimated DHEA-S levels between underweight and normal weight subjects ID 735 and 835}}
+\label{fig}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=1\linewidth]{compare/75_vs_211.png}
+\caption{\textbf{Comparison of Estimated DHEA-S levels between underweight and normal weight subjects ID 75 and 211}}
+\label{fig}
+\end{figure}
+
+\FloatBarrier
+
+\subsection{State Estimation}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=1\linewidth]{stateEstimation/211.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 211.}}
+    \label{fig}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=1\linewidth]{stateEstimation/317.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 317.}}
+    \label{fig}
+\end{figure}
+
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=1\linewidth]{stateEstimation/367.png}
+%     \caption{\textbf{Estimated hidden hormone-related health state for subject 317.}}
+%     \label{fig}
+% \end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.95\linewidth]{stateEstimation/463.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 463.}}
+    \label{fig:state_463}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.95\linewidth]{stateEstimation/5093.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 5093.}}
+    \label{fig:state_5093}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.95\linewidth]{stateEstimation/665.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 665.}}
+    \label{fig:state_665}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.95\linewidth]{stateEstimation/681.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 681.}}
+    \label{fig:state_681}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.95\linewidth]{stateEstimation/735.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 735.}}
+    \label{fig:state_735}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.95\linewidth]{stateEstimation/75.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 75.}}
+    \label{fig:state_75}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.95\linewidth]{stateEstimation/835.png}
+    \caption{\textbf{Estimated hidden hormone-related health state for subject 835.}}
+    \label{fig:state_835}
+\end{figure}
+
+\FloatBarrier
+
+\end{document}
